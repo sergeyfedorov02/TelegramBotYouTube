@@ -309,6 +309,31 @@ if __name__ == '__main__':
                              parse_mode='html')
 
 
+    # Обработка команды /getInfoAboutVideo
+    @bot.message_handler(commands=['getInfoAboutVideo'])
+    def command_get_info_about_video(message):
+        chat_id = message.chat.id  # Получем id чата
+        if chat_id not in chat_dict.keys():
+            bot.send_message(chat_id, "Вы ещё не присылали ни одной ссылки на видео")
+        elif chat_id in chat_dict.keys() and chat_dict[chat_id].uploader is None:
+            bot.send_message(chat_id, "Вы ещё не присылали ни одной ссылки на видео")
+        else:
+            # Отправляем информацию о видео пользователю
+            year = int(chat_dict[chat_id].date[:4])
+            month = int(chat_dict[chat_id].date[4:6])
+            day = int(chat_dict[chat_id].date[6:])
+            d = datetime.datetime(year, month, day)
+            bot.send_message(chat_id,
+                             "<b>Название видео:</b> {0}\n"
+                             "<b>Дата загрузки видео:</b> {1} {2} {3}\n"
+                             "<b>Количество просмотров:</b> {4}\n"
+                             "<b>Длительность видео в секундах:</b> {5}\n".format(chat_dict[chat_id].title, day,
+                                                                                  d.strftime("%B"), year,
+                                                                                  chat_dict[chat_id].views,
+                                                                                  chat_dict[chat_id].duration),
+                             parse_mode='html')
+
+
     # Обработка сообщения после ввода текста пользователем
     @bot.message_handler(content_types=['text'])
     def message_from_bot(message):
