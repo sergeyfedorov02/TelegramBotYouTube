@@ -284,6 +284,7 @@ if __name__ == '__main__':
                              "\n\n<b>Доступные команды:</b>"
                              "\n/start - для запуска бота"
                              "\n/help - отображение доступных команд"
+                             "\n/lastGIF - отправка последней сформированной GIF-ки"
                              "\n/getInfoAboutVideo - получение информации о последнем видео (последнее URL)"
                              "\n/getInfoAboutYouTuber - получение информации о последнем Ютубере (последнее URL)"
                              "\n\nПришлите мне ссылку на ролик в YouTube 😊".format(message.from_user, bot.get_me()),
@@ -298,6 +299,7 @@ if __name__ == '__main__':
         bot.send_message(chat_id, "<b>Доступные команды:</b>"
                                   "\n/start - для запуска бота"
                                   "\n/help - отображение доступных команд"
+                                  "\n/lastGIF - отправка последней сформированной GIF-ки"
                                   "\n/getInfoAboutVideo - получение информации о последнем видео (последнее URL)"
                                   "\n/getInfoAboutYouTuber - получение информации о последнем Ютубере (последнее URL)",
                          parse_mode='html')
@@ -331,7 +333,7 @@ if __name__ == '__main__':
         elif chat_id in chat_dict.keys() and chat_dict[chat_id].uploader is None:
             bot.send_message(chat_id, "Вы ещё не присылали ни одной ссылки на видео")
         else:
-            # Отправляем информацию о видео пользователю
+            # Отправляем информацию о Ютубере пользователю
             year = int(chat_dict[chat_id].date[:4])
             month = int(chat_dict[chat_id].date[4:6])
             day = int(chat_dict[chat_id].date[6:])
@@ -347,110 +349,136 @@ if __name__ == '__main__':
                              parse_mode='html')
 
 
+    # Обработка команды /lastGIF
+    @bot.message_handler(commands=['lastGIF'])
+    def command_last_gif(message):
+        chat_id = message.chat.id  # Получем id чата
+        if chat_id not in chat_dict.keys():
+            bot.send_message(chat_id, "Вы ещё не присылали ни одной ссылки на видео")
+        elif chat_id in chat_dict.keys() and chat_dict[chat_id].last_GIF is None:
+            bot.send_message(chat_id, "Вы ещё не делали ни одной GIF")
+        else:
+            # Отправляем GIF-ку пользователю, которая была последней
+            photo = open(rf"{chat_id}-new.gif", 'rb')
+            bot.send_animation(chat_id, photo)
+
+
+    # Обработка команды /"случайный текст"
+    # Этот декоратор вызывается при получении True из re.search(regexp)
+    # То есть, если хотя бы часть message будет соответствовать regexp, то декоратор сработает
+    @bot.message_handler(regexp=r"^/.*")
+    def command_random_text(message):
+        bot.reply_to(message, "Извините, но я не знаю такой команды"
+                              "\n\nДля получения списка доступных команд введите - /help")
+
+
     # Обработка сообщения после ввода текста пользователем
     @bot.message_handler(content_types=['text'])
     def message_from_bot(message):
         if message.chat.type == "private":
 
-            chat_id = message.chat.id  # Получим id текущего чата
-            current_chat = chat_dict[chat_id]  # Получаем соответствующий нашему chat.id элемент словаря
-
-            current_text = message.text  # получаем введенный пользователем текст (должна быть ссылка на youtube видео)
-
-            # Формируется ли сейчас GIF-ка?
-            if current_chat.wait_GIF:
-                bot.reply_to(message, "🕐 Сейчас формируется GIF-ка, подождите, а затем повторите свой запрос 🕐")
-
+            if message.chat.id not in chat_dict.keys():
+                bot.send_message(message.chat.id, "Для начала введите команду /start")
             else:
 
-                # Была ли уже полученна ссылка на видео от пользователя?
-                if current_chat.url is None:
+                chat_id = message.chat.id  # Получим id текущего чата
+                current_chat = chat_dict[chat_id]  # Получаем соответствующий нашему chat.id элемент словаря
 
-                    # Ссылка не была получена -> обрабатываем полученный текст
-                    info_about_url = get_info_about_url(current_text)
+                current_text = message.text  # получаем введенный пользователем текст (должна быть ссылка на youtube видео)
 
-                    # Была ли валидная ссылка:
-                    if not info_about_url[0]:
-                        bot.reply_to(message, info_about_url[1])
-                    else:
-                        # Получим информацию о видео
-                        info_from_video = get_information_from_youtube_video(current_text)
+                # Формируется ли сейчас GIF-ка?
+                if current_chat.wait_GIF:
+                    bot.reply_to(message, "🕐 Сейчас формируется GIF-ка, подождите, а затем повторите свой запрос 🕐")
 
-                        # Обновим информацию о полученном видео в словаре chat_dict по key - chat.id
-                        current_chat.url = current_text
-                        current_chat.id = info_from_video[0]
-                        current_chat.views = info_from_video[1]
-                        current_chat.date = info_from_video[2]
-                        current_chat.duration = info_from_video[3]
-                        current_chat.title = info_from_video[4]
+                else:
 
-                        current_chat.uploader = info_from_video[5]
-                        current_chat.num_followers = info_from_video[6]
-                        current_chat.num_videos = info_from_video[7]
+                    # Была ли уже полученна ссылка на видео от пользователя?
+                    if current_chat.url is None:
 
-                        current_chat.wait_answer = True  # Получили новое видео -> ждем ответа на вопрос
+                        # Ссылка не была получена -> обрабатываем полученный текст
+                        info_about_url = get_info_about_url(current_text)
 
-                        # Добавим Inline клавиатуру (после сообщения от бота мы сможем выбрать кнопку для отправки сообщения)
-                        markup = types.InlineKeyboardMarkup(row_width=2)
-                        item1 = types.InlineKeyboardButton("👍 Да, конечно", callback_data="yep")
-                        item2 = types.InlineKeyboardButton("👎 Нет, спасибо", callback_data="nope")
-                        markup.add(item1, item2)
-
-                        msg = bot.send_message(chat_id, info_about_url[1],
-                                               reply_markup=markup)
-                        current_chat.message_inline_button_id = msg.id
-
-                else:  # ссылка уже была получена
-
-                    # Ожидаем ли мы ответ от пользователя на наш вопрос? (была ли нажата кнопка Inline с ответом)
-                    if current_chat.wait_answer:
-
-                        # Ждем ответа -> кнопка не была нажата
-                        bot.reply_to(message, "Сначала ответьте на вопрос, выбрав кнопку с ответом 👆")
-                    else:  # Не ждем ответа -> кнопка уже была нажата
-
-                        # Обработка сообщения после нажатия пользователем кнопки ("🙏 Хочу ввести новую ссылку 🙌")
-                        if message.text == "🙏 Хочу ввести новую ссылку 🙌":
-                            # Обновим значения url и last_url
-                            current_chat.last_GIF = True
-                            current_chat.url = None
-                            bot.send_message(chat_id, "Хорошо, ожидаю новой ссылки 😀",
-                                             reply_markup=types.ReplyKeyboardRemove())
-
-                        # Кнопка не была нажата -> обработаем введенное сообщение
+                        # Была ли валидная ссылка:
+                        if not info_about_url[0]:
+                            bot.reply_to(message, info_about_url[1])
                         else:
-                            # Получим информацию о введеных timecodes
-                            info_about_timecodes = get_info_about_timecodes(current_text, current_chat.duration)
+                            # Получим информацию о видео
+                            info_from_video = get_information_from_youtube_video(current_text)
 
-                            # Были ли введены правильные и валидные значения timecodes ?
-                            if not info_about_timecodes[0]:
-                                bot.reply_to(message, info_about_timecodes[1], parse_mode='html')
-                            else:
-                                # timecodes были введены правильно -> формируем GIF
-                                current_chat.wait_GIF = True  # Во время формирования GIF нельзя обрабатывать другие запросы
-                                bot.send_message(chat_id, info_about_timecodes[1],
+                            # Обновим информацию о полученном видео в словаре chat_dict по key - chat.id
+                            current_chat.url = current_text
+                            current_chat.id = info_from_video[0]
+                            current_chat.views = info_from_video[1]
+                            current_chat.date = info_from_video[2]
+                            current_chat.duration = info_from_video[3]
+                            current_chat.title = info_from_video[4]
+
+                            current_chat.uploader = info_from_video[5]
+                            current_chat.num_followers = info_from_video[6]
+                            current_chat.num_videos = info_from_video[7]
+
+                            current_chat.wait_answer = True  # Получили новое видео -> ждем ответа на вопрос
+
+                            # Добавим Inline клавиатуру (после сообщения от бота мы сможем выбрать кнопку для отправки сообщения)
+                            markup = types.InlineKeyboardMarkup(row_width=2)
+                            item1 = types.InlineKeyboardButton("👍 Да, конечно", callback_data="yep")
+                            item2 = types.InlineKeyboardButton("👎 Нет, спасибо", callback_data="nope")
+                            markup.add(item1, item2)
+
+                            msg = bot.send_message(chat_id, info_about_url[1],
+                                                   reply_markup=markup)
+                            current_chat.message_inline_button_id = msg.id
+
+                    else:  # ссылка уже была получена
+
+                        # Ожидаем ли мы ответ от пользователя на наш вопрос? (была ли нажата кнопка Inline с ответом)
+                        if current_chat.wait_answer:
+
+                            # Ждем ответа -> кнопка не была нажата
+                            bot.reply_to(message, "Сначала ответьте на вопрос, выбрав кнопку с ответом 👆")
+                        else:  # Не ждем ответа -> кнопка уже была нажата
+
+                            # Обработка сообщения после нажатия пользователем кнопки ("🙏 Хочу ввести новую ссылку 🙌")
+                            if message.text == "🙏 Хочу ввести новую ссылку 🙌":
+                                # Обновим значения url
+                                current_chat.url = None
+                                bot.send_message(chat_id, "Хорошо, ожидаю новой ссылки 😀",
                                                  reply_markup=types.ReplyKeyboardRemove())
 
-                                # Получим всем значения введенных таймстепов
-                                steps_values = []
-                                steps = info_about_timecodes[2]
-                                for num in range(len(steps)):
-                                    steps_values.append(int(steps[num][2]))
+                            # Кнопка не была нажата -> обработаем введенное сообщение
+                            else:
+                                # Получим информацию о введеных timecodes
+                                info_about_timecodes = get_info_about_timecodes(current_text, current_chat.duration)
 
-                                # Получаем GIF_ку
-                                create_gif_from_images(steps_values, "new", current_chat.url, chat_id)
+                                # Были ли введены правильные и валидные значения timecodes ?
+                                if not info_about_timecodes[0]:
+                                    bot.reply_to(message, info_about_timecodes[1], parse_mode='html')
+                                else:
+                                    # timecodes были введены правильно -> формируем GIF
+                                    current_chat.wait_GIF = True  # Во время формирования GIF нельзя обрабатывать другие запросы
+                                    bot.send_message(chat_id, info_about_timecodes[1],
+                                                     reply_markup=types.ReplyKeyboardRemove())
 
-                                # Отправляем GIF-ку пользователю
-                                photo = open(rf"{chat_id}-new.gif", 'rb')
-                                bot.send_animation(chat_id, photo)
+                                    # Получим всем значения введенных таймстепов
+                                    steps_values = []
+                                    steps = info_about_timecodes[2]
+                                    for num in range(len(steps)):
+                                        steps_values.append(int(steps[num][2]))
 
-                                current_chat.wait_GIF = False
+                                    # Получаем GIF_ку
+                                    create_gif_from_images(steps_values, "new", current_chat.url, chat_id)
 
-                                # Обновим значения url и last_url
-                                current_chat.last_url = True
-                                current_chat.url = None
+                                    # Отправляем GIF-ку пользователю
+                                    photo = open(rf"{chat_id}-new.gif", 'rb')
+                                    bot.send_animation(chat_id, photo)
 
-                                bot.send_message(chat_id, "Пришлите мне ссылку на ролик в YouTube 😊")
+                                    current_chat.wait_GIF = False
+
+                                    # Обновим значения url и last_GIF
+                                    current_chat.last_GIF = True
+                                    current_chat.url = None
+
+                                    bot.send_message(chat_id, "Пришлите мне ссылку на ролик в YouTube 😊")
 
 
     # Обработка нажатия на кнопки Inline клавиатуру пользователем (реакция бота на ответ пользователя)
