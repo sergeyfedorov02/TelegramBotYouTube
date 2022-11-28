@@ -10,7 +10,7 @@ python setup.py sdist bdist_wheel
 """
 
 from setuptools import setup
-from pafy import __version__
+from TelegramBotForYouTube.pafy.pafy import __version__
 
 setup(
     name='pafy',
