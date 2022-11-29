@@ -43,6 +43,44 @@ Here is how to use the module in your own python code.  For command line tool
 
 .. code-block:: pycon
 
+    >>> import pafyfrom TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>> import pafyfrom TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>> import pafy
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>> import pafy
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>>
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>>
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>>
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+    >>>
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
+
+from TelegramBotForYouTube import pafy
+
+create a video instance from a YouTube url:
     >>> import pafy
 
 create a video instance from a YouTube url:
