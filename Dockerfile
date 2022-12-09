@@ -1,6 +1,6 @@
 # first stage
 FROM python:3.7.1 AS builder
-COPY requirementsDocker.txt .
+COPY TelegramBotForYouTube/requirementsDocker.txt .
 
 # install dependencies to the local user directory (eg. /root/.local)
 RUN pip install --upgrade pip && pip install --user -r requirementsDocker.txt
@@ -11,7 +11,7 @@ WORKDIR /code
 
 # copy only the dependencies that are needed for our application and the source files
 COPY --from=builder /root/.local /root/.local
-COPY . .
+COPY TelegramBotForYouTube .
 
 # update PATH
 ENV PATH=/root/.local:$PATH
